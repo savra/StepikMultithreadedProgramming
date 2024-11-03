@@ -32,7 +32,7 @@ public class Task1 {
                     Sex sex = rand.nextInt(2) == 0 ? Sex.MALE : Sex.FEMALE;
                     Person person = new Person(sex, "Имя" + i);
                     try {
-                        System.out.printf("%s пришел к раздевалке%n", person.getName());
+                        System.out.printf("%s пришел к раздевалке%n", person.name());
                         dressingRoom.enter(person);
                         TimeUnit.MILLISECONDS.sleep(rand.nextInt(300));
                         dressingRoom.exit();

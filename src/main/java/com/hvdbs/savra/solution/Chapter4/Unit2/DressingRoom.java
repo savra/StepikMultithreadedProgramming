@@ -22,16 +22,16 @@ public class DressingRoom {
     public void enter(Person person) throws InterruptedException {
         if (semaphore.tryAcquire(100, TimeUnit.MILLISECONDS)) {
             synchronized (lock) {
-                Sex sex = person.getSex();
+                Sex sex = person.sex();
                 System.out.printf("В раздевалку пытается зайти %s (Имя %s). Раздевалка в данный момент %s.%n",
-                        sex.getTitle(), person.getName(), state.getTitle());
+                        sex.getTitle(), person.name(), state.getTitle());
 
                 if (state == DressingRoomState.EMPTY
                         || (sex == Sex.FEMALE && state == DressingRoomState.OCCUPIED_BY_WOMAN ||
                         sex == Sex.MALE && state == DressingRoomState.OCCUPIED_BY_MAN)) {
                     addPerson(person);
 
-                    System.out.printf("%s в раздевалке. Раздевалка в данный момент %s. Количество человек в раздевалке: %d%n", person.getName(),
+                    System.out.printf("%s в раздевалке. Раздевалка в данный момент %s. Количество человек в раздевалке: %d%n", person.name(),
                             state == DressingRoomState.OCCUPIED_BY_MAN ? "мужская" : state == DressingRoomState.OCCUPIED_BY_WOMAN ? "женская" : "пустая",
                             persons.size());
 
@@ -45,7 +45,7 @@ public class DressingRoom {
                 }
             }
         } else {
-            System.out.printf("В раздевалке нет места, %s уходит%n", person.getName());
+            System.out.printf("В раздевалке нет места, %s уходит%n", person.name());
         }
     }
 
@@ -54,7 +54,7 @@ public class DressingRoom {
             Person p = persons.poll();
 
             if (p != null) {
-                System.out.printf("%s выходит. Имя: %s%n", p.getSex().getTitle(), p.getName());
+                System.out.printf("%s выходит. Имя: %s%n", p.sex().getTitle(), p.name());
                 semaphore.release();
 
                 if (persons.isEmpty()) {
@@ -70,7 +70,7 @@ public class DressingRoom {
 
     private void addPerson(Person person) {
         if (state == DressingRoomState.EMPTY) {
-            if (person.getSex() == Sex.MALE) {
+            if (person.sex() == Sex.MALE) {
                 state = DressingRoomState.OCCUPIED_BY_MAN;
             } else {
                 state = DressingRoomState.OCCUPIED_BY_WOMAN;
