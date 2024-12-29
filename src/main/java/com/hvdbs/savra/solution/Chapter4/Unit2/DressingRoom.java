@@ -3,27 +3,28 @@ package com.hvdbs.savra.solution.Chapter4.Unit2;
 import com.hvdbs.savra.solution.Chapter4.Unit2.enums.DressingRoomState;
 import com.hvdbs.savra.solution.Chapter4.Unit2.enums.Sex;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class DressingRoom {
-    private final Object lock = new Object();
-    private final Semaphore semaphore;
     private DressingRoomState state;
-    private final BlockingQueue<Person> persons = new LinkedBlockingQueue<>();
+    private final List<Person> persons;
+    private final Random rand = new Random();
+    private final Object mutex = new Object();
+    private final int dressingRoomSize;
 
     public DressingRoom(int dressingRoomSize) {
         this.state = DressingRoomState.EMPTY;
-        this.semaphore = new Semaphore(dressingRoomSize);
+        this.persons = new ArrayList<>(dressingRoomSize);
+        this.dressingRoomSize = dressingRoomSize;
     }
 
-    public void enter(Person person) throws InterruptedException {
-        if (semaphore.tryAcquire(100, TimeUnit.MILLISECONDS)) {
-            synchronized (lock) {
+    public void tryEnter(Person person) throws InterruptedException {
+        synchronized (mutex) {
+            if (persons.size() < dressingRoomSize) {
                 Sex sex = person.sex();
-                System.out.printf("В раздевалку пытается зайти %s (Имя %s). Раздевалка в данный момент %s.%n",
+                System.out.printf("-----В раздевалку пытается зайти %s (Имя %s). Раздевалка в данный момент %s.%n",
                         sex.getTitle(), person.name(), state.getTitle());
 
                 if (state == DressingRoomState.EMPTY
@@ -31,42 +32,31 @@ public class DressingRoom {
                         sex == Sex.MALE && state == DressingRoomState.OCCUPIED_BY_MAN)) {
                     addPerson(person);
 
-                    System.out.printf("%s в раздевалке. Раздевалка в данный момент %s. Количество человек в раздевалке: %d%n", person.name(),
+                    System.out.printf("-----%s в раздевалке. Раздевалка в данный момент %s. Количество человек в раздевалке: %d%n", person.name(),
                             state == DressingRoomState.OCCUPIED_BY_MAN ? "мужская" : state == DressingRoomState.OCCUPIED_BY_WOMAN ? "женская" : "пустая",
                             persons.size());
 
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                    mutex.wait(rand.nextInt(3000));
+                    exit();
                 } else {
-                    System.out.println("Раздевалка для людей другого пола");
+                    System.out.printf("Раздевалка для людей другого пола. %s уходит%n", person.name());
                 }
-            }
-        } else {
-            System.out.printf("В раздевалке нет места, %s уходит%n", person.name());
-        }
-    }
-
-    public void exit() {
-        synchronized (lock) {
-            Person p = persons.poll();
-
-            if (p != null) {
-                System.out.printf("%s выходит. Имя: %s%n", p.sex().getTitle(), p.name());
-                semaphore.release();
-
-                if (persons.isEmpty()) {
-                    state = DressingRoomState.EMPTY;
-                    System.out.println("Раздевалка теперь пустая");
-                } else {
-                    System.out.printf("Раздевалка %s%n", state.getTitle());
-                }
+            } else {
+                System.out.printf("В раздевалке нет места, %s уходит%n", person.name());
             }
         }
     }
 
+    private void exit() {
+        Person p = persons.remove(rand.nextInt(persons.size()));
+
+        System.out.printf("%s выходит. Имя: %s%n", p.sex().getTitle(), p.name());
+
+        if (persons.isEmpty()) {
+            state = DressingRoomState.EMPTY;
+            System.out.println("Раздевалка теперь пустая");
+        }
+    }
 
     private void addPerson(Person person) {
         if (state == DressingRoomState.EMPTY) {

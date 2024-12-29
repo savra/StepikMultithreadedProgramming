@@ -14,6 +14,8 @@ package com.hvdbs.savra.solution.Chapter4.Unit2;
 
 import com.hvdbs.savra.solution.Chapter4.Unit2.enums.Sex;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
@@ -25,17 +27,20 @@ public class Task1 {
         DressingRoom dressingRoom = new DressingRoom(dressingRoomSize);
         Random rand = new Random();
 
-        System.out.printf("Раздевалка рассчитана на %d. Пришло %d человек %n", dressingRoomSize, personCount);
+        System.out.printf("Раздевалка рассчитана на %d. Пришло %d человек %n%n", dressingRoomSize, personCount);
 
         CompletableFuture<?>[] completableFutures = IntStream.range(0, personCount)
                 .mapToObj(i -> CompletableFuture.runAsync(() -> {
-                    Sex sex = rand.nextInt(2) == 0 ? Sex.MALE : Sex.FEMALE;
-                    Person person = new Person(sex, "Имя" + i);
                     try {
-                        System.out.printf("%s пришел к раздевалке%n", person.name());
-                        dressingRoom.enter(person);
-                        TimeUnit.MILLISECONDS.sleep(rand.nextInt(300));
-                        dressingRoom.exit();
+                        TimeUnit.MILLISECONDS.sleep(rand.nextInt(200));
+                        Sex sex = rand.nextInt(2) == 0 ? Sex.MALE : Sex.FEMALE;
+                        Person person = new Person(sex, "Имя" + i);
+
+                        System.out.printf("%s. %s (%s) пришел к раздевалке%n",
+                                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")),
+                                person.name(),
+                                person.sex().getTitle());
+                        dressingRoom.tryEnter(person);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
